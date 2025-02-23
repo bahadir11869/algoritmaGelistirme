@@ -92,9 +92,12 @@ for i = 1: length(active_power_data)
                     istasyonlarSureyeGoreDolmusHali(iIstasyonIndex,i + l).iGecenSure =  istasyonlar(iIstasyonIndex,iAracIndex).iGecenSure;
                     istasyonlarSureyeGoreDolmusHali(iIstasyonIndex,i + l).iGiris =  istasyonlar(iIstasyonIndex,iAracIndex).iGiris;
                      istasyonlarSureyeGoreDolmusHali(iIstasyonIndex,i + l).iGuc =   istasyonlar(iIstasyonIndex,iAracIndex).iGuc;
-
-                     arac_graf(i + l) = arac_graf(i + l) + istasyonlar(iIstasyonIndex,iAracIndex).iGuc;
+                     arac_graf(i + m) = arac_graf(i + m) + istasyonlar(iIstasyonIndex,iAracIndex).iGuc
                 end 
+                for m=0:istasyonlar(iIstasyonIndex,iAracIndex).iGecenSure
+                    active_power_data(i + m) = active_power_data(i + m) + istasyonlar(iIstasyonIndex,iAracIndex).iGuc;
+                    arac_graf(i + m) = arac_graf(i + m) + istasyonlar(iIstasyonIndex,iAracIndex).iGuc;
+                end
             end         
        end
     end
@@ -102,7 +105,7 @@ end
 
 for i = 1: length(active_power_data)
     iGucValues = [istasyonlarSureyeGoreDolmusHali(:,i).iGuc;];
-    active_power_data(i) = active_power_data(i) + sum(iGucValues);
+    active_power_data_temp(i) = active_power_data_temp(i) + sum(iGucValues);
 end
 
 total_power_data_son = sqrt(active_power_data.^2 + reactive_power_data.^2);
