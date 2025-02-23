@@ -5,10 +5,6 @@ cAyrac = ';';
 
 iSocMax = 80;
 
-ist1GirisDkBaslangic = randi([500 600]);
-ist2GirisDkBaslangic = randi([500 600]);
-ist3GirisDkBaslangic = 750;
-
 iIlkIstasyonAracGirisZamani = [112 447 702 755 823 868 1080 1150 1200 1249];
 iIkinciIstasyonAracGirisZamani = [542 717 855 1131 1171 1216 1389];
 iUcuncuIstasyonAracGirisZamani = [304 632 699 785 954 1276 1342 1408];
@@ -22,7 +18,7 @@ active_power_data = zeros(1, sure);
 reactive_power_data = zeros(1, sure);
 total_power_data = zeros(1, sure);
 
-iIstasyonSayisi = 3;
+iIstasyonSayisi = length(arrAracSayilari);
 
 isebekeKatsayisi = 125;
 
