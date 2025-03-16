@@ -203,9 +203,9 @@ int main()
         
         getline(ss, a, ';');  // İlk sütun
         getline(ss, a, ';');  // İkinci sütun
-        getline(ss, a, ',');  // Üçüncü sütun
+        getline(ss, a, ';');  // Üçüncü sütun
         row.fActivePower = stof(a) * 125.0;
-        getline(ss, a, ',');  // Üçüncü sütun
+        getline(ss, a, ';');  // Üçüncü sütun
         row.fReactivePower = stof(a) * 125.0;
         row.fTotalPower = sqrt(pow(row.fActivePower, 2) + pow(row.fReactivePower, 2));
         dataRows.push_back(row);
@@ -284,7 +284,7 @@ int main()
         for(int j = 0; j < mIstasyonlaraGirenAraclar[i].size(); j++)
         {
             int iKaldigiSure = mIstasyonGirisCikisGenel2[i][j][mIstasyonlarTemp[i][j].iGirisDakika] - mIstasyonlarTemp[i][j].iGirisDakika;
-            //std::cout<< "Ham hali "<<i +1<<".istasyon " <<j + 1<< ".arac"<< " giris sure "<< mIstasyonlarTemp[i][j].iGirisDakika<<" kaldigi sure " << iKaldigiSure<< std::endl;
+            std::cout<< "Ham hali "<<i +1<<".istasyon " <<j + 1<< ".arac"<< " giris sure "<< mIstasyonlarTemp[i][j].iGirisDakika<<" kaldigi sure " << iKaldigiSure<< std::endl;
         }
     }
 
@@ -346,7 +346,7 @@ int main()
         for(int j = 0; j < mIstasyonlaraGirenAraclar[i].size(); j++)
         {
             int iKaldigiSure = mIstasyonlar[i][j].iBulunduguDakika - mIstasyonlar[i][j].iGirisDakika;
-            //std::cout<< i +1<<".istasyon " <<j + 1<< ".arac"<< " Guc "<< mIstasyonlar[i][j].iGuc <<  " giris sure "<< mIstasyonlar[i][j].iGirisDakika<<" gecen sure " <<iKaldigiSure  << std::endl;
+            std::cout<< i +1<<".istasyon " <<j + 1<< ".arac"<< " Guc "<< mIstasyonlar[i][j].iGuc <<  " giris sure "<< mIstasyonlar[i][j].iGirisDakika<<" gecen sure " <<iKaldigiSure  << std::endl;
         }
     }
 
