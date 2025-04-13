@@ -115,8 +115,20 @@ int HataTablosuKatSayiHesapla(float fHataYuzdesi)
     }
 }
 
+float setPointBelirle(float fTrafoBinmisGuc, float fTrafoGuc)
+{
+    if(fTrafoBinmisGuc>= fTrafoGuc && fTrafoBinmisGuc < fTrafoGuc*1.25)
+        return fTrafoGuc;
+    else if(fTrafoBinmisGuc>= fTrafoGuc* 1.25 && fTrafoBinmisGuc < fTrafoGuc*1.5)
+        return fTrafoGuc*1.125;
+    else if(fTrafoBinmisGuc>= fTrafoGuc* 1.5 && fTrafoBinmisGuc < fTrafoGuc*1.75)
+        return fTrafoGuc*1.25;
+    else
+        return fTrafoGuc*1.375;
+}
 
-void kesisenGucBilgileriniHesapla(map<int, int> m1, map<int, vector<Arac>>&  mIstasyonlar, float fSebekeyeHamYuk, int iSure)
+
+void kesisenGucBilgileriniHesapla(map<int, int> m1, map<int, vector<Arac>>&  mIstasyonlar, float fSebekeyeHamYuk, int iSure, float fSetPoint, float fBinmisYuk)
 {
     int iIndeks = 0;
     for (auto pair : m1) 
@@ -139,18 +151,26 @@ void kesisenGucBilgileriniHesapla(map<int, int> m1, map<int, vector<Arac>>&  mIs
                 m2[fSoc][pair.first] = pair.second;
                 //std::cout << "fsoc " << fSoc << " istasyon " << pair.first << " arac " << pair.second << std::endl;
                 if (fSoc < 0) 
-                    printf("Negatif fSoc tespit edildi! %f %d %d\n", fSoc, pair.first, pair.second);
+                    //printf("Negatif fSoc tespit edildi! %f %d %d\n", fSoc, pair.first, pair.second);
 
                 totalSoc += fSoc;
-                iSebekelerdenBinenGuc += mIstasyonlar[pair.first][pair.second].iGuc;
+                iSebekelerdenBinenGuc += iarrGuc[pair.first];//mIstasyonlar[pair.first][pair.second].iGuc;
                 iIstasyonSayisi++;
             }
         }
     }
 
-    float fHataOraniDuzeltilmis = ((((fSebekeyeHamYuk + iSebekelerdenBinenGuc) - 1000.0)/1000.0) * 100.0) * 0.9; // 1000.0 degeri config e alinacak 0.8 degeri config e alinacak
-    fHataOraniDuzeltilmis /= iIstasyonSayisi; 
+    float fHataOraniDuzeltilmis = ((fBinmisYuk - fSetPoint)/fSetPoint) * 100.0; // 1000.0 degeri config e alinacak 
+    //printf("fBinmisYuk %f fHata Orani duzeltilmis %f fSetPoint %f fSebekeyeHamYuk %f iSebekelerdenBinenGuc %d\n", fBinmisYuk, fHataOraniDuzeltilmis, fSetPoint, fSebekeyeHamYuk, iSebekelerdenBinenGuc);
+    if(fHataOraniDuzeltilmis < 0 )
+    {
+        printf("Negatif deger var hata oraninda %f\n", fHataOraniDuzeltilmis);
+        printf("fBinmisYuk %f fSebekeyeHamYuk %f iSebekelerdenBinenGuc %d fSetPoint %f\n", fBinmisYuk, fSebekeyeHamYuk, iSebekelerdenBinenGuc, fSetPoint);
+    }
+        
+    //fHataOraniDuzeltilmis /= iIstasyonSayisi; 
     int iKatsayi = HataTablosuKatSayiHesapla(fHataOraniDuzeltilmis*0.95); // 0.95 kismi config e alinacak
+    float fCikacakDeger = fHataOraniDuzeltilmis;//*iKatsayi >= 100.0 ? 50 : fHataOraniDuzeltilmis*iKatsayi;
     for (auto outerIt = m2.rbegin(); outerIt != m2.rend(); ++outerIt) 
     {
         float outerKey = outerIt->first; // soc bilgisi
@@ -169,7 +189,7 @@ void kesisenGucBilgileriniHesapla(map<int, int> m1, map<int, vector<Arac>>&  mIs
                 if(iKatsayi <= 0)
                     mIstasyonlar[innerKey][innerValue].iGuc = iarrGuc[innerKey];
                 else
-                    mIstasyonlar[innerKey][innerValue].iGuc = iarrGuc[innerKey]* (100.0 - iKatsayi*fHataOraniDuzeltilmis)/100; 
+                    mIstasyonlar[innerKey][innerValue].iGuc = iarrGuc[innerKey]* (100.0 - fCikacakDeger)/100; 
                 //printf("iSure %d %d.istasyon %d.arac  Guc = [%d] HataOrani =[%f] KatSayi =[%d] \n", iSure, innerKey, innerValue, mIstasyonlar[innerKey][innerValue].iGuc, fHataOraniDuzeltilmis, iKatsayi);
             }
             //printf("%d Istasyon %d Arac %d Guc\n", innerKey, innerValue, mIstasyonlar[innerKey][innerValue].iGuc);
@@ -216,9 +236,9 @@ int main()
 
 
     map<int, vector<int>> mIstasyonlaraGirenAraclar;
-    mIstasyonlaraGirenAraclar[0] = {112,447, 702, 755, 823, 868, 1080, 1150, 1200, 1249};
-    mIstasyonlaraGirenAraclar[1] = {542,717, 855, 1131, 1171, 1216, 1389};
-    mIstasyonlaraGirenAraclar[2] = {304,632, 699, 954, 1276, 1342, 1408};
+    mIstasyonlaraGirenAraclar[0] = {112,447, 702, 755, 823, 868, 900, 960, 1040, 1095, 1150, 1200, 1249};
+    mIstasyonlaraGirenAraclar[1] = {542,717, 855, 900, 975, 1150, 1200, 1300, 1389};
+    mIstasyonlaraGirenAraclar[2] = {304,632, 699, 900,954,1150,1276, 1342, 1408};
 
     map<int, vector<Arac>> mIstasyonlar;
     map<int, vector<Arac>> mIstasyonlarTemp;
@@ -291,6 +311,8 @@ int main()
 
 
     std::map<std::tuple<int, int, int>, int> mIstasyonlarYeniGuc;
+    float fSetPoint = 0.0;
+    float fTrafoGuc = 800.0; // trafo gücü 1600 kVA olarak kabul edildi
     for(int m = 0; m < 1440; m++)
     {   
         map<int, int> v;
@@ -300,7 +322,7 @@ int main()
             v[i]  = -1;  
             for(int j = 0; j < mIstasyonlaraGirenAraclar[i].size(); j++)
             {
-                if(m == mIstasyonlar[i][j].iBulunduguDakika && vVal[m] > 1000.0)
+                if(m == mIstasyonlar[i][j].iBulunduguDakika && vVal[m] >= fTrafoGuc)
                 {
                     v[i] = j;
                     bSebekeyeYukBinmis = true;
@@ -310,7 +332,9 @@ int main()
 
         if (bSebekeyeYukBinmis == true)
         {
-           kesisenGucBilgileriniHesapla(v, mIstasyonlar, mIstasyonHamGuc[m], m);
+           fSetPoint = setPointBelirle(vVal[m], fTrafoGuc);
+           //printf("Set pointler %f  binen yuk %f\n", fSetPoint, vVal[m]);
+           kesisenGucBilgileriniHesapla(v, mIstasyonlar, mIstasyonHamGuc[m], m, fSetPoint, vVal[m]);
         }
         
         for(int i = 0; i <mIstasyonlaraGirenAraclar.size(); i++)
@@ -443,6 +467,7 @@ int main()
     }
 
     plotWithGnuplot(d1, "Istasyona Binen yuk algo sonrasi");
+
     /* //istasyonlar icin
     vector<DataPoint> d1;
     int iZaman = 0;
