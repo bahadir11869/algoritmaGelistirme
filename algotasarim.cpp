@@ -96,8 +96,27 @@ float socDegerineGoreDusecekGucHesapla(float fSoc, float fToplamSoc, float fDusm
     return (fDusmesiGerekenGuc * fYuzdeSoc);
 }
 
+int HataTablosuKatSayiHesapla(float fHataYuzdesi)
+{
+    if(fHataYuzdesi <= 1.0)
+        return 0;
 
-void kesisenGucBilgileriniHesapla(map<int, int> m1, map<int, vector<Arac>>&  mIstasyonlar, float fSebekeyeBinmisYuk)
+    int iDeger = 1;
+    while(true)
+    {
+        if(fHataYuzdesi - 5.0 <= 0.0) // 5.0 degeri konfig e alincak
+            return iDeger;
+        else
+        {
+            iDeger++;
+            fHataYuzdesi -= 5.0;
+        }
+            
+    }
+}
+
+
+void kesisenGucBilgileriniHesapla(map<int, int> m1, map<int, vector<Arac>>&  mIstasyonlar, float fSebekeyeHamYuk, int iSure)
 {
     int iIndeks = 0;
     for (auto pair : m1) 
@@ -107,21 +126,11 @@ void kesisenGucBilgileriniHesapla(map<int, int> m1, map<int, vector<Arac>>&  mIs
 
     auto totalSoc = 0.0;
     map<float, map<int,int>> m2;
-
+    int iSebekelerdenBinenGuc = 0;
+    int iIstasyonSayisi = 0;
     for (auto pair : m1) 
     {
-        /*
-        if (iIndeks == 1) 
-        {
-            if (mIstasyonlar.find(pair.first) != mIstasyonlar.end() &&
-                pair.second < mIstasyonlar[pair.first].size()) 
-            {
-                int iTempGuc = mIstasyonlar[pair.first][pair.second].iGuc;
-                mIstasyonlar[pair.first][pair.second].iGuc = iTempGuc * 0.75;
-            }
-            return;
-        }
-        else */if (pair.second != -1) 
+        if (pair.second != -1) 
         {
             if (mIstasyonlar.find(pair.first) != mIstasyonlar.end() &&
                 pair.second < mIstasyonlar[pair.first].size()) 
@@ -133,12 +142,15 @@ void kesisenGucBilgileriniHesapla(map<int, int> m1, map<int, vector<Arac>>&  mIs
                     printf("Negatif fSoc tespit edildi! %f %d %d\n", fSoc, pair.first, pair.second);
 
                 totalSoc += fSoc;
+                iSebekelerdenBinenGuc += mIstasyonlar[pair.first][pair.second].iGuc;
+                iIstasyonSayisi++;
             }
         }
     }
-    //printf("<<<<<<<<<<<<>>>>>> \n");
-    float fSebekeyeBinenYuk = (fSebekeyeBinmisYuk - 950.0);
 
+    float fHataOraniDuzeltilmis = ((((fSebekeyeHamYuk + iSebekelerdenBinenGuc) - 1000.0)/1000.0) * 100.0) * 0.9; // 1000.0 degeri config e alinacak 0.8 degeri config e alinacak
+    fHataOraniDuzeltilmis /= iIstasyonSayisi; 
+    int iKatsayi = HataTablosuKatSayiHesapla(fHataOraniDuzeltilmis*0.95); // 0.95 kismi config e alinacak
     for (auto outerIt = m2.rbegin(); outerIt != m2.rend(); ++outerIt) 
     {
         float outerKey = outerIt->first; // soc bilgisi
@@ -154,23 +166,11 @@ void kesisenGucBilgileriniHesapla(map<int, int> m1, map<int, vector<Arac>>&  mIs
             if (mIstasyonlar.find(innerKey) != mIstasyonlar.end() &&
                 innerValue <= mIstasyonlar[innerKey].size()) 
             {
-                float iTempDusecekGuc = socDegerineGoreDusecekGucHesapla(outerKey, totalSoc, fSebekeyeBinenYuk);
-
-                //mIstasyonlar[innerKey][innerValue].iGuc = iarrGuc[innerKey] * 0.5;
-                
-                if (iarrGuc[innerKey] * 0.2 < iTempDusecekGuc) 
-                {
-                    mIstasyonlar[innerKey][innerValue].iGuc = iarrGuc[innerKey] * 0.8;
-                }
+                if(iKatsayi <= 0)
+                    mIstasyonlar[innerKey][innerValue].iGuc = iarrGuc[innerKey];
                 else
-                {
-                
-                    int iTempGuc = iarrGuc[innerKey];
-                    mIstasyonlar[innerKey][innerValue].iGuc = iTempGuc - iTempDusecekGuc;      
-                }
-               
-                //std::cout << "istasyon_new " << innerKey << " arac_new " << innerValue <<" iGuc Bilgisi_new " << mIstasyonlar[innerKey][innerValue].iGuc << std::endl;
-                
+                    mIstasyonlar[innerKey][innerValue].iGuc = iarrGuc[innerKey]* (100.0 - iKatsayi*fHataOraniDuzeltilmis)/100; 
+                //printf("iSure %d %d.istasyon %d.arac  Guc = [%d] HataOrani =[%f] KatSayi =[%d] \n", iSure, innerKey, innerValue, mIstasyonlar[innerKey][innerValue].iGuc, fHataOraniDuzeltilmis, iKatsayi);
             }
             //printf("%d Istasyon %d Arac %d Guc\n", innerKey, innerValue, mIstasyonlar[innerKey][innerValue].iGuc);
         }
@@ -241,6 +241,7 @@ int main()
 
     //int iZaman = 0;
     map<int,float> vVal;
+    map<int,float> mIstasyonHamGuc;
     map<int, float> mIstasyonaGoreAnlikSoc;
     map<int, float> mIstasyonaGoreAnlikSoc2;
     map<int ,map<int ,map<int, int>>> mIstasyonGirisCikisGenel;
@@ -248,7 +249,8 @@ int main()
 
     for(int m = 0; m < 1440; m++)
     {
-        vVal[m] =dataRows[m].fActivePower;
+        vVal[m] = dataRows[m].fActivePower;
+        mIstasyonHamGuc[m] = dataRows[m].fActivePower;
         for(int i = 0; i <mIstasyonlaraGirenAraclar.size(); i++)
         {
             for(int j = 0; j < mIstasyonlaraGirenAraclar[i].size(); j++)
@@ -268,7 +270,6 @@ int main()
         {
             for(int j = 0; j < mIstasyonlaraGirenAraclar[i].size(); j++)
             {
-                //mIstasyonaGoreAnlikSocDegisim2[i] =  mIstasyonlarTemp[i][j].fSoc;
                 if(m >= mIstasyonlarTemp[i][j].iGirisDakika &&  mIstasyonlarTemp[i][j].fSoc <= 80.0)
                 {
                     mIstasyonGirisCikisGenel2[i][j][mIstasyonlarTemp[i][j].iGirisDakika] = m;  
@@ -299,7 +300,7 @@ int main()
             v[i]  = -1;  
             for(int j = 0; j < mIstasyonlaraGirenAraclar[i].size(); j++)
             {
-                if(m == mIstasyonlar[i][j].iBulunduguDakika && vVal[m] > 950.0)
+                if(m == mIstasyonlar[i][j].iBulunduguDakika && vVal[m] > 1000.0)
                 {
                     v[i] = j;
                     bSebekeyeYukBinmis = true;
@@ -309,13 +310,7 @@ int main()
 
         if (bSebekeyeYukBinmis == true)
         {
-            /*
-           for(int i = 0; i < v.size(); i++)
-           {
-                std::cout << m <<". dk "<<i <<" .istasyon " << v[i] << " . arac "<< std::endl;
-           }
-                */
-           kesisenGucBilgileriniHesapla(v, mIstasyonlar, vVal[m]);
+           kesisenGucBilgileriniHesapla(v, mIstasyonlar, mIstasyonHamGuc[m], m);
         }
         
         for(int i = 0; i <mIstasyonlaraGirenAraclar.size(); i++)
@@ -330,11 +325,6 @@ int main()
                     mIstasyonlarYeniGuc[{m, i, j}] = mIstasyonlar[i][j].iGuc;
                     mIstasyonlar[i][j].fSoc = mIstasyonaGoreAnlikSoc[i]; 
                     mIstasyonlar[i][j].iBulunduguDakika += 1;
-                    if(m > 1150)
-                    {
-                       //std::cout << i + 1<<" .istasyon " <<"fSoc " << mIstasyonlar[i][j].fSoc << " Guc " << mIstasyonlar[i][j].iGuc<<" Bulundugu dk " << mIstasyonlar[i][j].iBulunduguDakika<<std::endl;
-                       //std::cout<< m<<". dk "<<i +1<<".istasyon " <<j + 1<< ".arac"<< " Guc "<< mIstasyonlar[i][j].iGuc  << std::endl;
-                    }
                 }
             }
         }
