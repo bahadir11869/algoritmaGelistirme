@@ -7,6 +7,7 @@
 #include <cmath>
 #include <random>
 #include <algorithm>  // std::find için
+#include <cstring>
 using namespace std;
 
 
@@ -311,6 +312,7 @@ int main()
 
 
     std::map<std::tuple<int, int, int>, int> mIstasyonlarYeniGuc;
+    std::map<std::tuple<int, int, int>, float> mIstasyonlarGuncelSoc;
     float fSetPoint = 0.0;
     float fTrafoGuc = 800.0; // trafo gücü 1600 kVA olarak kabul edildi
     for(int m = 0; m < 1440; m++)
@@ -347,6 +349,7 @@ int main()
                     mIstasyonGirisCikisGenel[i][j][mIstasyonlar[i][j].iGirisDakika] = m;  
                     mIstasyonaGoreAnlikSoc[i] = fSocHesapla(mIstasyonlar[i][j].fEnerji , mIstasyonlar[i][j].iGuc, mIstasyonlar[i][j].fSoc);
                     mIstasyonlarYeniGuc[{m, i, j}] = mIstasyonlar[i][j].iGuc;
+                    mIstasyonlarGuncelSoc[{m, i, j}] = mIstasyonaGoreAnlikSoc[i];
                     mIstasyonlar[i][j].fSoc = mIstasyonaGoreAnlikSoc[i]; 
                     mIstasyonlar[i][j].iBulunduguDakika += 1;
                 }
@@ -390,7 +393,7 @@ int main()
         iVal = 0;
     }
 
-    plotWithGnuplot(d1, "Algo Oncesi Istasyon Guc");
+    //plotWithGnuplot(d1, "Algo Oncesi Istasyon Guc");
 
     iZaman = 0;
     iVal = 0.0;
@@ -414,7 +417,7 @@ int main()
         iVal = 0;
     }
 
-    plotWithGnuplot(d2, "Algo Sonrasi Istasyon Guc");
+    //plotWithGnuplot(d2, "Algo Sonrasi Istasyon Guc");
 
 
     d1.clear();
@@ -440,7 +443,7 @@ int main()
         d1.push_back(d11);       
     }
 
-    plotWithGnuplot(d1, "Istasyona Binen yuk algo oncesi");
+    //plotWithGnuplot(d1, "Istasyona Binen yuk algo oncesi");
 
 
     d1.clear();
@@ -466,8 +469,101 @@ int main()
         d1.push_back(d11);       
     }
 
-    plotWithGnuplot(d1, "Istasyona Binen yuk algo sonrasi");
+    //plotWithGnuplot(d1, "Istasyona Binen yuk algo sonrasi");
 
+    // Binary dosyayi yazdirmak icin 
+    
+    FILE* fp = fopen("Algo.bin", "wb");
+    char* cpVeri = new char[10000000];
+    char* cpVeri2 = new char[10000000];
+    memset(cpVeri, 0, 10000000);
+    int iEklenecekBoy = 0;
+    int iIstasyonGuc = 0;
+    float fSebekeBinmisGuc = 0;
+    int iDeneme = 0;
+    for(int m = 0; m < 1440; m++)
+    {
+        memcpy(cpVeri + iEklenecekBoy, &m, sizeof(int));
+        iEklenecekBoy += sizeof(int);
+        memcpy(cpVeri + iEklenecekBoy, &(dataRows[m].fActivePower), sizeof(dataRows[m].fActivePower));
+        iEklenecekBoy += sizeof(dataRows[m].fActivePower);
+
+        for(int i = 0; i <mIstasyonlaraGirenAraclar.size(); i++)
+        {
+            for(int j = 0; j < mIstasyonlaraGirenAraclar[i].size(); j++)
+            {
+                if(m >= mIstasyonlar[i][j].iGirisDakika && m<= mIstasyonlar[i][j].iBulunduguDakika )
+                {
+                    int iKaldigiSure = mIstasyonlar[i][j].iBulunduguDakika - mIstasyonlar[i][j].iGirisDakika;
+                    int iIstasyonNo = i + 1;
+                    int iAracNo = j + 1;
+                    memcpy(cpVeri + iEklenecekBoy, &iIstasyonNo, sizeof(int));
+                    iEklenecekBoy += sizeof(int);
+                    memcpy(cpVeri + iEklenecekBoy, &iAracNo, sizeof(int));
+                    iEklenecekBoy += sizeof(int);
+                    memcpy(cpVeri + iEklenecekBoy, &(mIstasyonlarGuncelSoc[{m,i,j}]), sizeof(mIstasyonlar[i][j].fSoc));
+                    iEklenecekBoy += sizeof(float);
+                    memcpy(cpVeri + iEklenecekBoy, &(mIstasyonlar[i][j].fEnerji), sizeof(mIstasyonlar[i][j].fEnerji));
+                    iEklenecekBoy += sizeof(float);
+                    memcpy(cpVeri + iEklenecekBoy, &(mIstasyonlar[i][j].iGirisDakika), sizeof(mIstasyonlar[i][j].iGirisDakika));
+                    iEklenecekBoy += sizeof(int);
+                    memcpy(cpVeri + iEklenecekBoy, &(mIstasyonlar[i][j].iGuc), sizeof(mIstasyonlar[i][j].iGuc));
+                    iEklenecekBoy += sizeof(int);
+                    memcpy(cpVeri + iEklenecekBoy, &(iKaldigiSure), sizeof(iKaldigiSure));
+                    iEklenecekBoy += sizeof(int);
+                    iIstasyonGuc += mIstasyonlar[i][j].iGuc;
+                }
+                else
+                {
+                    iEklenecekBoy += sizeof(i);
+                    iEklenecekBoy += sizeof(j);
+                    iEklenecekBoy += sizeof(float); // mIstasyonlar[i][j].fSoc
+                    iEklenecekBoy += sizeof(float); // mIstasyonlar[i][j].fEnerji
+                    iEklenecekBoy += sizeof(int); // mIstasyonlar[i][j].iGirisDakika
+                    iEklenecekBoy += sizeof(int); // mIstasyonlar[i][j].iGuc
+                    iEklenecekBoy += sizeof(int); // mIstasyonlar[i][j].iBulunduguDakika
+                }
+            }
+        }
+
+        fSebekeBinmisGuc = dataRows[m].fActivePower + (float)iIstasyonGuc;
+        memcpy(cpVeri + iEklenecekBoy, &fSebekeBinmisGuc, sizeof(fSebekeBinmisGuc));
+
+        iEklenecekBoy += sizeof(fSebekeBinmisGuc);
+        iIstasyonGuc = 0;
+    }
+
+    fwrite(cpVeri, iEklenecekBoy, 1, fp);
+    fclose(fp);
+    delete[] cpVeri;
+
+    /* bin dosyasini okumasini test etmek icin koyuldu
+    FILE* fp2 = fopen("Algo.bin", "rb");
+    for(int m = 0; m < 1440; m++)
+    {
+        fread(cpVeri2, 4, 1, fp2);
+        if(m == 112)
+            std::cout << "DK int "<<*(int*)(cpVeri2) << std::endl;
+        fread(cpVeri2, 4, 1, fp2);
+        if(m == 112)
+            std::cout<< "Ham guc float  " << *(float*)(cpVeri2) << std::endl;
+        for(int i = 0; i <mIstasyonlaraGirenAraclar.size(); i++)
+        {
+            for(int j = 0; j < mIstasyonlaraGirenAraclar[i].size(); j++)
+            {
+                
+                fread(cpVeri2, 4, 1, fp2);
+                fread(cpVeri2, 4, 1, fp2);
+                fread(cpVeri2, 4, 1, fp2);
+                fread(cpVeri2, 4, 1, fp2);
+                fread(cpVeri2, 4, 1, fp2);
+                fread(cpVeri2, 4, 1, fp2);
+                fread(cpVeri2, 4, 1, fp2);
+            }
+        }
+        fread(cpVeri2, 4, 1, fp2);
+    }
+    */
     /* //istasyonlar icin
     vector<DataPoint> d1;
     int iZaman = 0;
