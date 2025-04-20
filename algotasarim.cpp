@@ -162,7 +162,7 @@ void kesisenGucBilgileriniHesapla(map<int, int> m1, map<int, vector<Arac>>&  mIs
     }
 
     float fHataOraniDuzeltilmis = ((fBinmisYuk - fSetPoint)/fSetPoint) * 100.0; // 1000.0 degeri config e alinacak 
-    //printf("fBinmisYuk %f fHata Orani duzeltilmis %f fSetPoint %f fSebekeyeHamYuk %f iSebekelerdenBinenGuc %d\n", fBinmisYuk, fHataOraniDuzeltilmis, fSetPoint, fSebekeyeHamYuk, iSebekelerdenBinenGuc);
+    //printf("iSure: %d fBinmisYuk %f fHata Orani duzeltilmis %f fSetPoint %f fSebekeyeHamYuk %f iSebekelerdenBinenGuc %d\n", iSure, fBinmisYuk, fHataOraniDuzeltilmis, fSetPoint, fSebekeyeHamYuk, iSebekelerdenBinenGuc);
     if(fHataOraniDuzeltilmis < 0 )
     {
         printf("Negatif deger var hata oraninda %f\n", fHataOraniDuzeltilmis);
@@ -306,7 +306,7 @@ int main()
         for(int j = 0; j < mIstasyonlaraGirenAraclar[i].size(); j++)
         {
             int iKaldigiSure = mIstasyonGirisCikisGenel2[i][j][mIstasyonlarTemp[i][j].iGirisDakika] - mIstasyonlarTemp[i][j].iGirisDakika;
-            std::cout<< "Ham hali "<<i +1<<".istasyon " <<j + 1<< ".arac"<< " giris sure "<< mIstasyonlarTemp[i][j].iGirisDakika<<" kaldigi sure " << iKaldigiSure<< std::endl;
+            //std::cout<< "Ham hali "<<i +1<<".istasyon " <<j + 1<< ".arac"<< " giris sure "<< mIstasyonlarTemp[i][j].iGirisDakika<<" kaldigi sure " << iKaldigiSure<< std::endl;
         }
     }
 
@@ -363,7 +363,7 @@ int main()
         for(int j = 0; j < mIstasyonlaraGirenAraclar[i].size(); j++)
         {
             int iKaldigiSure = mIstasyonlar[i][j].iBulunduguDakika - mIstasyonlar[i][j].iGirisDakika;
-            std::cout<< i +1<<".istasyon " <<j + 1<< ".arac"<< " Guc "<< mIstasyonlar[i][j].iGuc <<  " giris sure "<< mIstasyonlar[i][j].iGirisDakika<<" gecen sure " <<iKaldigiSure  << std::endl;
+            //std::cout<< i +1<<".istasyon " <<j + 1<< ".arac"<< " Guc "<< mIstasyonlar[i][j].iGuc <<  " giris sure "<< mIstasyonlar[i][j].iGirisDakika<<" gecen sure " <<iKaldigiSure  << std::endl;
         }
     }
 
@@ -458,9 +458,10 @@ int main()
         {
             for(int j = 0; j < mIstasyonlaraGirenAraclar[i].size(); j++)
             {
-                if((mIstasyonlar[i][j].iBulunduguDakika)>= m  ||  m == mIstasyonlar[i][j].iGirisDakika)
+                if(m >= mIstasyonlar[i][j].iGirisDakika && m<= mIstasyonlar[i][j].iBulunduguDakika )//if((mIstasyonlar[i][j].iBulunduguDakika)>= m  ||  m == mIstasyonlar[i][j].iGirisDakika)
                 {
                     iVal+= mIstasyonlarYeniGuc[{m,i,j}];
+                    //printf("iSure %d iIstasyon %d  iArac %d  iGuc %d fSebekeHamGuc %f\n", m,i+1,j+1,mIstasyonlarYeniGuc[{m,i,j}],dataRows[m].fActivePower);
                 }
             }
         }
@@ -469,7 +470,7 @@ int main()
         d1.push_back(d11);       
     }
 
-    //plotWithGnuplot(d1, "Istasyona Binen yuk algo sonrasi");
+    plotWithGnuplot(d1, "Istasyona Binen yuk algo sonrasi");
 
     // Binary dosyayi yazdirmak icin 
     
@@ -479,14 +480,18 @@ int main()
     memset(cpVeri, 0, 10000000);
     int iEklenecekBoy = 0;
     int iIstasyonGuc = 0;
-    float fSebekeBinmisGuc = 0;
+    float fSebekeBinmisGuc = 0.0;
     int iDeneme = 0;
+    float fBinmisGucAlgosuz = 0.0;
     for(int m = 0; m < 1440; m++)
     {
         memcpy(cpVeri + iEklenecekBoy, &m, sizeof(int));
         iEklenecekBoy += sizeof(int);
-        memcpy(cpVeri + iEklenecekBoy, &(dataRows[m].fActivePower), sizeof(dataRows[m].fActivePower));
-        iEklenecekBoy += sizeof(dataRows[m].fActivePower);
+        memcpy(cpVeri + iEklenecekBoy, &(dataRows[m].fActivePower), sizeof(float));
+        iEklenecekBoy += sizeof(float);
+        int iIstasyonlarHamGuc = (int)(vVal[m] - dataRows[m].fActivePower);
+        memcpy(cpVeri + iEklenecekBoy, &(iIstasyonlarHamGuc), sizeof(int));
+        iEklenecekBoy += sizeof(int);
 
         for(int i = 0; i <mIstasyonlaraGirenAraclar.size(); i++)
         {
@@ -501,17 +506,17 @@ int main()
                     iEklenecekBoy += sizeof(int);
                     memcpy(cpVeri + iEklenecekBoy, &iAracNo, sizeof(int));
                     iEklenecekBoy += sizeof(int);
-                    memcpy(cpVeri + iEklenecekBoy, &(mIstasyonlarGuncelSoc[{m,i,j}]), sizeof(mIstasyonlar[i][j].fSoc));
+                    memcpy(cpVeri + iEklenecekBoy, &(mIstasyonlarGuncelSoc[{m,i,j}]), sizeof(float));
                     iEklenecekBoy += sizeof(float);
-                    memcpy(cpVeri + iEklenecekBoy, &(mIstasyonlar[i][j].fEnerji), sizeof(mIstasyonlar[i][j].fEnerji));
+                    memcpy(cpVeri + iEklenecekBoy, &(mIstasyonlar[i][j].fEnerji), sizeof(float));
                     iEklenecekBoy += sizeof(float);
-                    memcpy(cpVeri + iEklenecekBoy, &(mIstasyonlar[i][j].iGirisDakika), sizeof(mIstasyonlar[i][j].iGirisDakika));
+                    memcpy(cpVeri + iEklenecekBoy, &(mIstasyonlar[i][j].iGirisDakika), sizeof(int));
                     iEklenecekBoy += sizeof(int);
-                    memcpy(cpVeri + iEklenecekBoy, &(mIstasyonlar[i][j].iGuc), sizeof(mIstasyonlar[i][j].iGuc));
+                    memcpy(cpVeri + iEklenecekBoy, &(mIstasyonlarYeniGuc[{m,i,j}]), sizeof(int));
                     iEklenecekBoy += sizeof(int);
-                    memcpy(cpVeri + iEklenecekBoy, &(iKaldigiSure), sizeof(iKaldigiSure));
+                    memcpy(cpVeri + iEklenecekBoy, &(iKaldigiSure), sizeof(int));
                     iEklenecekBoy += sizeof(int);
-                    iIstasyonGuc += mIstasyonlar[i][j].iGuc;
+                    iIstasyonGuc += mIstasyonlarYeniGuc[{m,i,j}];
                 }
                 else
                 {
@@ -527,9 +532,14 @@ int main()
         }
 
         fSebekeBinmisGuc = dataRows[m].fActivePower + (float)iIstasyonGuc;
-        memcpy(cpVeri + iEklenecekBoy, &fSebekeBinmisGuc, sizeof(fSebekeBinmisGuc));
-
+        memcpy(cpVeri + iEklenecekBoy, &fSebekeBinmisGuc, sizeof(float));
         iEklenecekBoy += sizeof(fSebekeBinmisGuc);
+
+        memcpy(cpVeri + iEklenecekBoy, &vVal[m], sizeof(float));
+        iEklenecekBoy += sizeof(float);
+
+        memcpy(cpVeri + iEklenecekBoy, &iIstasyonGuc, sizeof(int));
+        iEklenecekBoy += sizeof(int);
         iIstasyonGuc = 0;
     }
 
